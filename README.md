@@ -6,4 +6,5 @@
 - Actual alphabetical order.
 - Print trigger words to terminal.
 - Bypass toggle to disable without aiming the sliders at 0.
+- Force fetch if you want to force a refresh.
 
