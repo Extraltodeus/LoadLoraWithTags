@@ -57,6 +57,7 @@ class LoraLoaderTagsQuery:
                               "tags_out": ("BOOLEAN", {"default": True}),
                               "print_tags": ("BOOLEAN", {"default": False}),
                               "bypass": ("BOOLEAN", {"default": False}),
+                              "force_fetch": ("BOOLEAN", {"default": False}),
                               },
                 "optional":
                             {
@@ -68,7 +69,7 @@ class LoraLoaderTagsQuery:
     FUNCTION = "load_lora"
     CATEGORY = "loaders"
 
-    def load_lora(self, model, clip, lora_name, strength_model, strength_clip, query_tags, tags_out, print_tags, bypass, opt_prompt=None):
+    def load_lora(self, model, clip, lora_name, strength_model, strength_clip, query_tags, tags_out, print_tags, bypass, force_fetch, opt_prompt=None):
         if strength_model == 0 and strength_clip == 0 or bypass:
             if opt_prompt is not None:
                 out_string = opt_prompt
@@ -87,7 +88,7 @@ class LoraLoaderTagsQuery:
             output_tags = ""
 
         lora_path = folder_paths.get_full_path("loras", lora_name)
-        if query_tags and output_tags == "":
+        if (query_tags and output_tags == "") or force_fetch:
             print("calculating lora hash")
             LORAsha256 = calculate_sha256(lora_path)
             print("requesting infos")
