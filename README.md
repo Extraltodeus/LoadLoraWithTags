@@ -8,3 +8,6 @@
 - Bypass toggle to disable without aiming the sliders at 0.
 - Force fetch (not in the screenshot) if you want to force a refresh.
 
+I'm talking about these words right there:
+
+![image](https://github.com/Extraltodeus/LoadLoraWithTags/assets/15731540/f4685bd4-5575-4055-a589-89e77eee1365)
