@@ -7,6 +7,7 @@
 - Print trigger words to terminal.
 - Bypass toggle to disable without aiming the sliders at 0.
 - Force fetch (not in the screenshot) if you want to force a refresh.
+- It uses the sha256 hash so you can rename the file as you like.
 
 I'm talking about these words right there:
 
