@@ -12,3 +12,17 @@
 I'm talking about these words right there:
 
 ![image](https://github.com/Extraltodeus/LoadLoraWithTags/assets/15731540/f4685bd4-5575-4055-a589-89e77eee1365)
+
+
+# LoraTagsQueryOnly
+- Same as LoadLoraWithTags but without the need of inputing a model and a clip
+
+# TagsSelector
+- Allow to chose which tags to select.
+- Can use ranges `5:8`
+- Can select individal indexes `2,3,9`
+- Can mix both `2,3,1:5,9`
+- Can use negative values like in a python list to start from the end `2, -5:`
+
+# TagsViewer
+- Helper to show the available tag and their indexes

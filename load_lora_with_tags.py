@@ -41,6 +41,45 @@ def calculate_sha256(file_path):
             sha256_hash.update(chunk)
     return sha256_hash.hexdigest()
 
+
+def load_and_save_tags(lora_name, print_tags, query_tags, force_fetch):
+    json_tags_path = "./loras_tags.json"
+    lora_tags = load_json_from_file(json_tags_path)
+    output_tags = lora_tags.get(lora_name, None) if lora_tags is not None else None
+    if output_tags is not None:
+        output_tags_list = output_tags
+        output_tags = ", ".join(output_tags)
+        if print_tags:
+                print("trainedWords:",output_tags)
+    else:
+        output_tags_list = []
+        output_tags = ""
+
+    lora_path = folder_paths.get_full_path("loras", lora_name)
+    if (query_tags and output_tags == "") or force_fetch:
+        print("calculating lora hash")
+        LORAsha256 = calculate_sha256(lora_path)
+        print("requesting infos")
+        model_info = get_model_version_info(LORAsha256)
+        if model_info is not None:
+            if "trainedWords" in model_info:
+                print("tags found!")
+                if lora_tags is None:
+                    lora_tags = {}
+                lora_tags[lora_name] = model_info["trainedWords"]
+                save_dict_to_json(lora_tags,json_tags_path)
+                output_tags = ", ".join(model_info["trainedWords"])
+                if print_tags:
+                    print("trainedWords:",output_tags)
+        else:
+            print("No informations found.")
+            if lora_tags is None:
+                    lora_tags = {}
+            lora_tags[lora_name] = []
+            save_dict_to_json(lora_tags,json_tags_path)
+
+    return lora_path, output_tags, output_tags_list
+
 class LoraLoaderTagsQuery:
     def __init__(self):
         self.loaded_lora = None
@@ -65,9 +104,9 @@ class LoraLoaderTagsQuery:
                             }
                 }
     
-    RETURN_TYPES = ("MODEL", "CLIP", "STRING")
+    RETURN_TYPES = ("MODEL", "CLIP", "STRING", "LIST",)
     FUNCTION = "load_lora"
-    CATEGORY = "loaders"
+    CATEGORY = "llwt"
 
     def load_lora(self, model, clip, lora_name, strength_model, strength_clip, query_tags, tags_out, print_tags, bypass, force_fetch, opt_prompt=None):
         if strength_model == 0 and strength_clip == 0 or bypass:
@@ -77,38 +116,8 @@ class LoraLoaderTagsQuery:
                 out_string = ""
             return (model, clip, out_string,)
         
-        json_tags_path = "./loras_tags.json"
-        lora_tags = load_json_from_file(json_tags_path)
-        output_tags = lora_tags.get(lora_name, None) if lora_tags is not None else None
-        if output_tags is not None:
-            output_tags = ", ".join(output_tags)
-            if print_tags:
-                    print("trainedWords:",output_tags)
-        else:
-            output_tags = ""
-
-        lora_path = folder_paths.get_full_path("loras", lora_name)
-        if (query_tags and output_tags == "") or force_fetch:
-            print("calculating lora hash")
-            LORAsha256 = calculate_sha256(lora_path)
-            print("requesting infos")
-            model_info = get_model_version_info(LORAsha256)
-            if model_info is not None:
-                if "trainedWords" in model_info:
-                    print("tags found!")
-                    if lora_tags is None:
-                        lora_tags = {}
-                    lora_tags[lora_name] = model_info["trainedWords"]
-                    save_dict_to_json(lora_tags,json_tags_path)
-                    output_tags = ", ".join(model_info["trainedWords"])
-                    if print_tags:
-                        print("trainedWords:",output_tags)
-            else:
-                print("No informations found.")
-                if lora_tags is None:
-                        lora_tags = {}
-                lora_tags[lora_name] = []
-                save_dict_to_json(lora_tags,json_tags_path)
+        
+        lora_path, output_tags, output_tags_list = load_and_save_tags(lora_name, print_tags, query_tags, force_fetch)
 
         lora = None
         if self.loaded_lora is not None:
@@ -127,10 +136,128 @@ class LoraLoaderTagsQuery:
         if opt_prompt is not None:
             if tags_out:
                 output_tags = opt_prompt+", "+output_tags
+                output_tags_list.append(opt_prompt)
             else:
                 output_tags = opt_prompt
-        return (model_lora, clip_lora, output_tags,)
+                output_tags_list = [opt_prompt]
+        return (model_lora, clip_lora, output_tags, output_tags_list,)
+    
+
+class LoraTagsQueryOnly:
+    def __init__(self):
+        pass
+
+    @classmethod
+    def INPUT_TYPES(s):
+        LORA_LIST = sorted(folder_paths.get_filename_list("loras"), key=str.lower)
+        return {
+            "required": { 
+                "lora_name": (LORA_LIST, ),
+                "query_tags": ("BOOLEAN", {"default": True}),
+                "tags_out": ("BOOLEAN", {"default": True}),
+                "print_tags": ("BOOLEAN", {"default": False}),
+                "force_fetch": ("BOOLEAN", {"default": False}),
+            },
+            "optional": {
+                "opt_prompt": ("STRING", {"forceInput": True}),
+            }
+        }
+    
+    RETURN_TYPES = ("STRING", "LIST",)
+    FUNCTION = "load_lora"
+    CATEGORY = "llwt"
+
+    def load_lora(self, lora_name, query_tags, tags_out, print_tags, force_fetch, opt_prompt=None):
+        _, output_tags, output_tags_list = load_and_save_tags(lora_name, print_tags, query_tags, force_fetch)
+
+        if opt_prompt is not None:
+            if tags_out:
+                output_tags = opt_prompt+", "+output_tags
+                output_tags_list.append(opt_prompt)
+            else:
+                output_tags = opt_prompt
+                output_tags_list = [opt_prompt]
+        return (output_tags, output_tags_list,)
+    
+    
+class TagsSelector:
+    def __init__(self):
+        pass
+
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": { 
+                "tags_list": ("LIST", {"default": []}),
+                "selector": ("STRING", {"default": ":"}),
+            },
+        }
+    
+    RETURN_TYPES = ("STRING",)
+    FUNCTION = "select_tags"
+    CATEGORY = "llwt"
+
+    def select_tags(self, tags_list, selector):
+        range_index_list = selector.split(",")
+        output = {}
+        for range_index in range_index_list:
+            # single value
+            if range_index.count(":") == 0:
+                index = int(range_index)
+                output[index] = tags_list[index]
+
+            # actual range
+            if range_index.count(":") == 1:
+                indexes = range_index.split(":")
+                # check empty
+                if indexes[0] == "":
+                    start = 0
+                else:
+                    start = int(indexes[0])
+                if indexes[1] == "":
+                    end = len(tags_list)
+                else:
+                    end = int(indexes[1])
+                # check negative
+                if start < 0:
+                    start = len(tags_list) + start
+                if end < 0:
+                    end = len(tags_list) + end
+                # merge all
+                for i in range(start, end):
+                    output[i] = tags_list[i]
+        output_tags = ", ".join(list(output.values()))
+
+        return (output_tags,)
+
+class TagsViewer:
+    def __init__(self):
+        pass
+
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": { 
+                "tags_list": ("LIST", {"default": []}),
+            },
+        }
+    
+    RETURN_TYPES = ("STRING",)
+    FUNCTION = "format_tags"
+    CATEGORY = "llwt"
+
+    def format_tags(self, tags_list):
+        output = ""
+        i = 0
+        for tag in tags_list:
+            output += f'{i} : "{tag}"\n'
+            i+=1
+
+        return (output,)
     
 NODE_CLASS_MAPPINGS = {
     "LoraLoaderTagsQuery": LoraLoaderTagsQuery,
+    "LoraTagsQueryOnly": LoraTagsQueryOnly,
+    "TagsSelector": TagsSelector,
+    "TagsViewer": TagsViewer,
 }
