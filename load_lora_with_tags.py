@@ -45,10 +45,9 @@ def calculate_sha256(file_path):
 def load_and_save_tags(lora_name, print_tags, query_tags, force_fetch):
     json_tags_path = "./loras_tags.json"
     lora_tags = load_json_from_file(json_tags_path)
-    output_tags = lora_tags.get(lora_name, None) if lora_tags is not None else None
-    if output_tags is not None:
-        output_tags_list = output_tags
-        output_tags = ", ".join(output_tags)
+    output_tags_list = lora_tags.get(lora_name, None) if lora_tags is not None else None
+    if output_tags_list is not None:
+        output_tags = ", ".join(output_tags_list)
         if print_tags:
                 print("trainedWords:",output_tags)
     else:
@@ -69,6 +68,7 @@ def load_and_save_tags(lora_name, print_tags, query_tags, force_fetch):
                 lora_tags[lora_name] = model_info["trainedWords"]
                 save_dict_to_json(lora_tags,json_tags_path)
                 output_tags = ", ".join(model_info["trainedWords"])
+                output_tags_list = model_info["trainedWords"]
                 if print_tags:
                     print("trainedWords:",output_tags)
         else:
@@ -105,6 +105,7 @@ class LoraLoaderTagsQuery:
                 }
     
     RETURN_TYPES = ("MODEL", "CLIP", "STRING", "LIST",)
+    RETURN_NAMES = ("MODEL", "CLIP", "civitai_tags", "civitai_tags_list")
     FUNCTION = "load_lora"
     CATEGORY = "llwt"
 
@@ -164,6 +165,7 @@ class LoraTagsQueryOnly:
         }
     
     RETURN_TYPES = ("STRING", "LIST",)
+    RETURN_NAMES = ("civitai_tags", "civitai_tags_list")
     FUNCTION = "load_lora"
     CATEGORY = "llwt"
 
