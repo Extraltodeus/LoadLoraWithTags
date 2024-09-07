@@ -12,3 +12,5 @@
 I'm talking about these words right there:
 
 ![image](https://github.com/Extraltodeus/LoadLoraWithTags/assets/15731540/f4685bd4-5575-4055-a589-89e77eee1365)
+
+Note: I don't intend to update this node any further.
